@@ -1,0 +1,1283 @@
+apiVersion:apps/v1
+kind: Deployment
+metadata:
+  name: mavenwebdep
+  namespace: flipkart-ns
+spec:
+  replicas: 2
+  strategy:
+    type: ReCreate
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebapppod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebapp
+        image: sanjeevk95/maven-web-application:1
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: flipkart-ns
+spec:
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+
+-------------------------------------------------------------
+HPA deployment
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpadeployment
+  labels:
+    name: hpadeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: hpapod
+  template:
+    metadata:
+      labels:
+        name: hpapod
+    spec:
+      containers:
+        - name: hpacontainer
+          image: k8s.gcr.io/hpa-example
+          ports:
+          - name: http
+            containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpaclusterservice
+  labels:
+    name: hpaservice
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    name: hpapod
+  type: NodePort
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpadeployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 40
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85
+-------------------------------------------------------------------------------------------
+apiVersion: v1
+kind: Pod
+metadata:
+  name: javawebapppod
+  labels:
+    app: javawebapp
+  namespace: flipkart-ns
+spec:
+  containers:
+    - name: javawebapp
+      image: sanjeevk95/java-web-application:1
+      ports:
+      - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+  namespace: flipkart-ns
+spec:
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+------------------------------------------------------------------------
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: javawebapprc
+  namespace: flipkart-ns
+spec:
+  replicas: 2
+  selector:
+    app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+  namespace: flipkart-ns
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+-----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mavenwebdep
+  namespace: flipkart-ns
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebapppod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebapp
+        image: sanjeevk95/maven-web-application:2
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: flipkart-ns
+spec:
+  type: NodePort
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+------------------------------------------------------------------------------
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mavenwebapppod
+  labels:
+    app: mavenwebapp
+  namespace: flipkart-ns
+spec:
+  containers:
+    - name: mavenwebapp
+      image: sanjeevk95/maven-web-application:1
+      ports:
+      - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: flipkart-ns
+spec:
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+--------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mavenwebdep
+  namespace: testns
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebapppod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebapp
+        image: sanjeevk95/maven-web-application:2
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebsvc
+  namespace: testns
+spec:
+  type: NodePort
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+----------------------------------------------------------------------------------------
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: testns
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: testnsquota
+  namespace: testns
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    pods: "2"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: testns-limit-range
+  namespace: testns
+spec:
+  limits:
+  - default:
+      cpu: 200m
+      memory: 512Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 256Mi
+    type: Container
+-----------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  springapp
+spec:
+  selector:
+    matchLabels:
+      app: springapp
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app:  springapp
+    spec:
+      containers:
+      - name:  springapp
+        image:  sanjeevk95/spring-app:1
+        env: 
+        - name: MONGO_DB_USERNAME
+          value: devdb
+        - name: MONGO_DB_PASSWORD 
+          value: devdb@123
+        - name: MONGO_DB_HOSTNAME
+          value: mongosvc
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        ports:
+        - containerPort:  8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+spec:
+  type: NodePort
+  selector:
+    app: springapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: devdb
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: devdb@123
+        volumeMounts:                                      # volume mounts should be same as volume name
+        - name: mongodbhostpathvol1 
+          mountPath: /data/db
+      volumes:
+      - name: mongodbhostpathvol1
+        hostPath:
+          path: /tmp/mongo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+spec:
+  selector:
+    app: mongo 
+  ports:
+  - port: 27017
+    targetPort: 27017
+
+-----------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  springapp
+spec:
+  selector:
+    matchLabels:
+      app: springapp
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app:  springapp
+    spec:
+      containers:
+      - name:  springapp
+        image:  sanjeevk95/spring-app:1
+        env:
+        - name: MONGO_DB_USERNAME
+          value: devdb
+        - name: MONGO_DB_PASSWORD
+          value: devdb@123
+        - name: MONGO_DB_HOSTNAME
+          value: mongosvc
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        ports:
+        - containerPort:  8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+spec:
+  type: NodePort
+  selector:
+    app: springapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: devdb
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: devdb@123
+        volumeMounts:
+        - name: mongodbhostpathvol
+          mountPath: /data/db
+      volumes:
+      - name: mongodbhostpathvol
+        nfs:
+          server: 172.31.33.241
+          path: /mnt/nfs_share
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+spec:
+  selector:
+    app: mongo
+  ports:
+  - port: 27017
+    targetPort: 27017
+-----------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  springapp
+spec:
+  selector:
+    matchLabels:
+      app: springapp
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app:  springapp
+    spec:
+      containers:
+      - name:  springapp
+        image:  sanjeevk95/spring-app:1
+        env:
+        - name: MONGO_DB_USERNAME
+          value: devdb
+        - name: MONGO_DB_PASSWORD
+          value: devdb@123
+        - name: MONGO_DB_HOSTNAME
+          value: mongosvc
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        ports:
+        - containerPort:  8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+spec:
+  type: NodePort
+  selector:
+    app: springapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: devdb
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: devdb@123
+        volumeMounts:
+        - name: mongodbhostpathvol
+          mountPath: /data/db
+      volumes:
+      - name: mongodbhostpathvol
+        persistentVolumeClaim:
+          claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim ----------------------------PVC
+metadata:
+  name: mongopvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+spec:
+  selector:
+    app: mongo
+  ports:
+  - port: 27017
+    targetPort: 27017
+--------------------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolume   #----------------------------PV
+metadata:
+  name: nfsvolume
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteMany
+  nfs:
+    server: 172.31.33.241
+    path: /mnt/nfs_share
+
+
+----------------------------------------------------
+apiVersion: v1
+kind: PersistentVolume  #----------------------------PV
+metadata:
+  name: hostpathpv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: /tmp/mongo
+---------------------------------------------------
+jenkins pod
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkinsns
+spec:
+  selector:
+    matchLabels: 
+      app: jenkins
+  template:
+    metadata:
+      name: jenkinspod
+      labels:
+        app: jenkins
+    spec:
+      containers: 
+      - name: jenkinscontainer
+        image: jenkins/jenkins:lts
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: jenkinsvolume
+          mountPath: /var/jenkins_home
+      volumes:
+      - name: jenkinsvolume
+        persistentVolumeClaim:
+          claimName: jenkinspvc           #claim name should be same as pvc name
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: 
+  name: jenkinspvc                         #claim name should be same as pvc name
+  namespace: jenkinsns
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: jenkinssvc
+  namespace: jenkinsns
+spec:
+  type: NodePort
+  selector:
+    app: jenkins
+  ports:
+  - port: 80
+    targetPort: 8080
+-----------------------------------
+apiVersion: apps/v1
+kind: Stateful
+metadata:
+  name: mongo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo
+  serviceName: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongocontainer
+        image: mongo
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: springappconfig
+              key: mongodbusername
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: springappsecret
+              key: mongodbpassword
+        volumeMounts:
+        - name: mongodbhostvol
+          mountPath: /data/db
+      volumes:
+      - name: mongodbhostvol
+        hostPath: 
+          path: /tmp/mongo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo 
+spec:
+  clusterIP: None
+  selector:
+    app: mongo
+  ports: 
+  - port: 27017
+    targetPort: 27017
+
+
+---------------------------------------------
+Node selector
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebappdep
+  namespace: flipkart-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      nodeSelector:
+        name: workerone
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+
+
+---------------------------------------------------------------------------------------------
+Node affinity ---  Preferred during scheduling and ignored during execution ---- soft rule
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebappdep
+  namespace: flipkart-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preferences:
+              matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - workerone
+        name: workerone
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+
+--------------------------------------------------------------------
+Node affinity ---  required during scheduling and ignored during execution ---- soft rule
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebappdep
+  namespace: flipkart-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - workerone
+        name: workerone
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+
+--------------------------------------------------
+Taints and tolerations
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebappdep
+  namespace: flipkart-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: "NoSchedule"
+        operator: "Exists"
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+-------------------------------------------------------------------------------
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+
+-----------------------------------------------------------------------
+ 
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: ClusterIP
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebappdep
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+          limits:
+            cpu: 1
+            memory: 2Gi
+
+
+
+=============================================================================
+ConfigMap 
+
+
+create configmap of tomcatuserconfig.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tomcatuserconfig
+  namespace: flipkart-ns
+data:
+  tomcat-users.xml: |
+    <?xml version='1.0' encoding='utf-8'?>
+      <tomcat-users xmlns="http://tomcat.apache.org/xml"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+              version="1.0">
+              <user username="admin" password="02021995" roles="manager-gui,admin-gui"/>
+
+     </tomcat-users>
+
+
+
+
+kubectl apply -f tomcatuserconfig.yaml
+
+
+
+
+
+
+
+-------------------------
+
+javaconfig.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapprc
+  namespace: flipkart-ns
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: tomcatuserconfig
+          mountPath: /usr/local/tomcat/conf/tomcat-users.xml
+          subPath: "tomcat-users.xml"
+      volumes:
+      - name: tomcatuserconfig
+        configMap:
+          name: tomcatuserconfig
+          items:
+          - key: tomcat-users.xml
+            path: tomcat-users.xml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+  namespace: flipkart-ns
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+=============================================================
+
+secret - by creating configmap and secret you can run manifest in prod and dev env and directly run pod manifest 
+
+
+config and secret 
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springappconfig
+data:
+  mongodbusername: devdb
+
+
+
+
+Imperative way
+kubectl create configmap springappconfig --from-literal=mongodbusername=devdb
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: springappsecret
+type: Opaque
+data:
+  mongodbpassword: devdb@123
+
+
+
+imeperative way -
+kubectl create secret generic springappsecret --from-literal=mongodbpassword=devdb@123 
+
+-------------------
+
+## Spring Boot App
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springappdeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      name: springapppod
+      labels:
+        app: springapp
+    spec:
+      containers:
+      - name: springappcontainer
+        image: dockerhandson/spring-boot-mongo
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MONGO_DB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: springappconfig
+              key: mongodbusername
+        - name: MONGO_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: springappsecret
+              key: mongodbpassword
+        - name: MONGO_DB_HOSTNAME
+          value: mongo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springapp
+spec:
+  selector:
+    app: springapp
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: NodePort
+---
+# Mongo db pod with volumes(HostPath)
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodbrs
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+     metadata:
+       name: mongodbpod
+       labels:
+         app: mongodb
+     spec:
+       volumes:
+       - name: mongodbhost
+         hostPath: 
+           path: /tmp/mongo
+       containers:
+       - name: mongodbcontainer
+         image: mongo
+         ports:
+         - containerPort: 27017
+         env:
+         - name: MONGO_INITDB_ROOT_USERNAME
+           valueFrom:
+             configMapKeyRef:
+               name: springappconfig
+               key: mongodbusername
+         - name: MONGO_INITDB_ROOT_PASSWORD
+           valueFrom:
+             secretKeyRef:
+               name: springappsecret
+               key: mongodbpassword
+         volumeMounts:
+         - name: mongodbhostvol
+           mountPath: /data/db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+spec:
+  type: ClusterIP
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+
+================================================================
+liveness and readyness probe
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapprc
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      labels:
+        app: javawebapp
+    spec:
+      containers:
+      - name: javawebapp
+        image: sanjeevk95/java-web-application:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /java-web-app    # give tha context path if it  is root path give /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /java-web-app    # give tha context path if it  is root path give /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+
+
